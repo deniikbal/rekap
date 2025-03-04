@@ -3,13 +3,38 @@ import Head from 'next/head';
 import { useRouter } from 'next/router';
 import DashboardLayout from '../../components/DashboardLayout';
 import { useAuth } from '../../contexts/AuthContext';
+import { Bar } from 'react-chartjs-2';
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend
+} from 'chart.js';
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  BarElement,
+  Title,
+  Tooltip,
+  Legend
+);
 
 export default function Dashboard() {
   const { user, loading, isAuthenticated } = useAuth();
   const router = useRouter();
   const [stats, setStats] = useState({
     totalUsers: 0,
-    recentActivity: []
+    totalStudents: 0,
+    totalViolations: 0,
+    recentActivity: [],
+    classroomViolations: {
+      labels: [],
+      data: []
+    }
   });
 
   useEffect(() => {
@@ -23,14 +48,38 @@ export default function Dashboard() {
     // Fetch dashboard stats
     const fetchStats = async () => {
       try {
-        const response = await fetch('/api/users');
-        if (response.ok) {
-          const users = await response.json();
-          setStats({
-            totalUsers: users.length,
-            recentActivity: users.slice(0, 5) // Get 5 most recent users
-          });
-        }
+        // Fetch users
+        const usersResponse = await fetch('/api/users');
+        const users = await usersResponse.json();
+
+        // Fetch students
+        const studentsResponse = await fetch('/api/students');
+        const students = await studentsResponse.json();
+
+        // Fetch violations
+        const violationsResponse = await fetch('/api/violations');
+        const violations = await violationsResponse.json();
+
+        // Fetch classrooms with their violations
+        const classroomsResponse = await fetch('/api/classrooms');
+        const classrooms = await classroomsResponse.json();
+
+        // Process classroom violations data
+        const classroomViolationsData = classrooms.map(classroom => ({
+          name: classroom.name,
+          violationCount: violations.filter(v => v.classroom_id === classroom.id).length
+        }));
+
+        setStats({
+          totalUsers: users.length,
+          totalStudents: students.length,
+          totalViolations: violations.length,
+          recentActivity: users.slice(0, 5),
+          classroomViolations: {
+            labels: classroomViolationsData.map(c => c.name),
+            data: classroomViolationsData.map(c => c.violationCount)
+          }
+        });
       } catch (error) {
         console.error('Error fetching dashboard stats:', error);
       }
@@ -40,6 +89,31 @@ export default function Dashboard() {
       fetchStats();
     }
   }, [isAuthenticated]);
+
+  // Chart options
+  const chartOptions = {
+    responsive: true,
+    plugins: {
+      legend: {
+        position: 'top',
+      },
+      title: {
+        display: true,
+        text: 'Violations by Classroom'
+      }
+    }
+  };
+
+  const chartData = {
+    labels: stats.classroomViolations.labels,
+    datasets: [
+      {
+        label: 'Number of Violations',
+        data: stats.classroomViolations.data,
+        backgroundColor: 'rgba(53, 162, 235, 0.5)'
+      }
+    ]
+  };
 
   // Show loading state while checking authentication
   if (loading) {
@@ -65,14 +139,29 @@ export default function Dashboard() {
       <div>
         <h1 className="text-3xl font-bold mb-6">Dashboard</h1>
         
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
-          {/* Stats Card */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+          {/* Users Stats Card */}
           <div className="bg-white rounded-lg shadow p-6">
             <h2 className="text-lg font-semibold mb-2">Total Users</h2>
             <p className="text-3xl font-bold text-blue-600">{stats.totalUsers}</p>
           </div>
           
-          {/* More stat cards can be added here */}
+          {/* Students Stats Card */}
+          <div className="bg-white rounded-lg shadow p-6">
+            <h2 className="text-lg font-semibold mb-2">Total Students</h2>
+            <p className="text-3xl font-bold text-green-600">{stats.totalStudents}</p>
+          </div>
+
+          {/* Violations Stats Card */}
+          <div className="bg-white rounded-lg shadow p-6">
+            <h2 className="text-lg font-semibold mb-2">Total Violations</h2>
+            <p className="text-3xl font-bold text-red-600">{stats.totalViolations}</p>
+          </div>
+        </div>
+
+        {/* Chart Section */}
+        <div className="bg-white rounded-lg shadow p-6 mb-8">
+          <Bar options={chartOptions} data={chartData} />
         </div>
 
         {/* Recent Activity */}
