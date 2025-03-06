@@ -2,12 +2,8 @@
   "/_app": "pages/_app.js",
   "/_error": "pages/_error.js",
   "/_document": "pages/_document.js",
-  "/": "pages/index.js",
   "/login": "pages/login.js",
+  "/categories": "pages/categories.js",
   "/dashboard": "pages/dashboard.js",
-  "/api/users": "pages/api/users.js",
-  "/api/students": "pages/api/students.js",
-  "/students": "pages/students.js",
-  "/api/violations": "pages/api/violations.js",
-  "/api/classrooms": "pages/api/classrooms.js"
+  "/api/categories": "pages/api/categories.js"
 }
