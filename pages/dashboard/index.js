@@ -50,7 +50,9 @@ export default function Dashboard() {
       try {
         // Fetch users
         const usersResponse = await fetch('/api/users');
-        const users = await usersResponse.json();
+        const usersData = await usersResponse.json();
+        // Extract users array from response (handling both array and {data: []} formats)
+        const users = Array.isArray(usersData) ? usersData : (usersData.data || []);
 
         // Fetch students
         const studentsResponse = await fetch('/api/students');
@@ -58,11 +60,16 @@ export default function Dashboard() {
 
         // Fetch violations
         const violationsResponse = await fetch('/api/violations');
-        const violations = await violationsResponse.json();
+        const violationsData = await violationsResponse.json();
+        // Extract violations array from response (handling both array and {data: []} formats)
+        const violations = Array.isArray(violationsData) ? violationsData : (violationsData.data || []);
 
         // Fetch classrooms with their violations
         const classroomsResponse = await fetch('/api/classrooms');
-        const classrooms = await classroomsResponse.json();
+        const classroomsData = await classroomsResponse.json();
+        
+        // Extract classrooms array from response (handling both array and {data: []} formats)
+        const classrooms = Array.isArray(classroomsData) ? classroomsData : (classroomsData.data || []);
 
         // Process classroom violations data
         const classroomViolationsData = classrooms.map(classroom => ({
